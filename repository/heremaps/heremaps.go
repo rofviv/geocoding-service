@@ -96,6 +96,30 @@ func (h *HereMaps) ReverseGeocoding(location *entity.Location) (string, *entity.
 	}
 }
 
+// TODO: Crear un modelo para leer la respuesta del SEARCH
 func (h *HereMaps) Search(address string, location *entity.Location) (string, []*entity.Place, error) {
+
+	latlng := fmt.Sprintf("%f,%f", location.Lat, location.Lng)
+	params := url.Values{}
+	params.Add("at", latlng)
+	params.Add("q", address)
+	params.Add("apikey", h.ApiKey)
+	params.Add("lang", "en-US")
+
+	var uri string = fmt.Sprintf("https://autosuggest.search.hereapi.com/v1/autosuggest?%s", params.Encode())
+	resp, err := http.Get(uri)
+	if err != nil {
+		return "FAILED", nil, err
+	}
+
+	defer resp.Body.Close()
+	bytes, errRead := ioutil.ReadAll(resp.Body)
+	if errRead != nil {
+		return "FAILED", nil, err
+	}
+
+	fmt.Println(string(bytes))
 	return "", nil, nil
 }
+
+// TODO: ROUTES

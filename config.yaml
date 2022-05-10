@@ -4,8 +4,8 @@ app:
 
 maps:
   provider: google_maps
-  api_key: YOUR_API_KEY_HERE
+  api_key: AIzaSyBku1G8U3PY79XNSB_WMxMFC-_g1CPwvXc
   # provider: here_maps
-  # api_key: YOUR_API_KEY_HERE
+  # api_key: unN1L3n7MizI0y7WHtIWHVhm81NaWE1JvU3cHWfiu48
   # provider: flight_maps
   # api_key: YOUR_API_KEY_HERE
