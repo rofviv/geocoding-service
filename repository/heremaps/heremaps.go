@@ -96,7 +96,7 @@ func (h *HereMaps) ReverseGeocoding(location *entity.Location) (string, *entity.
 	}
 }
 
-// TODO: Crear un modelo para leer la respuesta del SEARCH
+// TODO: CREAR UN MODELO PARA LEER LA RESPUESTA DEL SEARCH. DEBE DEVOLER NAME, ADDRESS, LOCATION
 func (h *HereMaps) Search(address string, location *entity.Location) (string, []*entity.Place, error) {
 
 	latlng := fmt.Sprintf("%f,%f", location.Lat, location.Lng)

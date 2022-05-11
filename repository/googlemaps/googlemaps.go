@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"maps.patio.com/entity"
+	status "maps.patio.com/responses"
 )
 
 type GoogleMaps struct {
@@ -45,14 +46,14 @@ func (g *GoogleMaps) Geocoding(address string) (string, *entity.Location, error)
 
 	resp, err := http.Get(uri)
 	if err != nil {
-		return "FAILED", nil, err
+		return status.FAILED, nil, err
 	}
 
 	defer resp.Body.Close()
 
 	bytes, errRead := ioutil.ReadAll(resp.Body)
 	if errRead != nil {
-		return "FAILED", nil, err
+		return status.FAILED, nil, err
 	}
 
 	var results Results
@@ -77,13 +78,13 @@ func (g *GoogleMaps) ReverseGeocoding(location *entity.Location) (string, *entit
 
 	resp, err := http.Get(uri)
 	if err != nil {
-		return "FAILED", nil, err
+		return status.FAILED, nil, err
 	}
 
 	defer resp.Body.Close()
 	bytes, errRead := ioutil.ReadAll(resp.Body)
 	if errRead != nil {
-		return "FAILED", nil, err
+		return status.FAILED, nil, err
 	}
 
 	var results Results
@@ -97,7 +98,7 @@ func (g *GoogleMaps) ReverseGeocoding(location *entity.Location) (string, *entit
 		address := &entity.Address{
 			Address: results.Results[0].Address,
 		}
-		return "OK", address, nil
+		return status.OK, address, nil
 	}
 }
 
@@ -112,13 +113,13 @@ func (g *GoogleMaps) Search(address string, location *entity.Location) (string, 
 	var uri string = fmt.Sprintf("https://maps.googleapis.com/maps/api/place/textsearch/json?%s", params.Encode())
 	resp, err := http.Get(uri)
 	if err != nil {
-		return "FAILED", nil, err
+		return status.FAILED, nil, err
 	}
 
 	defer resp.Body.Close()
 	bytes, errRead := ioutil.ReadAll(resp.Body)
 	if errRead != nil {
-		return "FAILED", nil, err
+		return status.FAILED, nil, err
 	}
 
 	var results Results
@@ -131,7 +132,7 @@ func (g *GoogleMaps) Search(address string, location *entity.Location) (string, 
 	} else {
 		// TODO: RECORRER ARRAY RESULTS
 		fmt.Println(results.Results[0])
-		return "OK", nil, nil
+		return status.OK, nil, nil
 	}
 
 }
