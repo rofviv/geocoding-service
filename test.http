@@ -3,7 +3,7 @@ POST http://localhost:4000/geocoding HTTP/1.1
 Content-Type: application/json
 
 {
-    "address": "calle dechía, santa cruz Bolivia"
+    "address": "dechía"
 }
 
 ###
@@ -20,7 +20,7 @@ POST http://localhost:4000/search HTTP/1.1
 Content-Type: application/json
 
 {
-    "address": "cine center",
+    "address": "casa del camba",
     "lat": -17.79920272314301,
     "lng": -63.197151031977505
 }

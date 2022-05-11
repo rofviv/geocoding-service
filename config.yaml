@@ -3,9 +3,9 @@ app:
   debug: true
 
 maps:
-  provider: google_maps
-  api_key: YOUR_API_KEY_HERE
-  # provider: here_maps
+  # provider: google_maps
   # api_key: YOUR_API_KEY_HERE
+  provider: here_maps
+  api_key: YOUR_API_KEY_HERE
   # provider: flight_maps
   # api_key: YOUR_API_KEY_HERE

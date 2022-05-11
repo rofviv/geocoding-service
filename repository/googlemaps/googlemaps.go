@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"maps.patio.com/entity"
 	status "maps.patio.com/responses"
@@ -36,7 +37,7 @@ func New(key string) *GoogleMaps {
 	}
 }
 
-func (g *GoogleMaps) Geocoding(address string) (string, *entity.Location, error) {
+func (g *GoogleMaps) Geocoding(address string) (string, *entity.Address, error) {
 
 	params := url.Values{}
 	params.Add("address", address)
@@ -64,7 +65,12 @@ func (g *GoogleMaps) Geocoding(address string) (string, *entity.Location, error)
 	if len(results.Results) == 0 {
 		return results.Status, nil, errors.New("no results for " + address)
 	} else {
-		return results.Status, &results.Results[0].ResultItem.Location, nil
+		newAddress := &entity.Address{
+			Name:     strings.Split(results.Results[0].Address, ",")[0],
+			Address:  results.Results[0].Address,
+			Location: &results.Results[0].ResultItem.Location,
+		}
+		return results.Status, newAddress, nil
 	}
 }
 
@@ -96,14 +102,15 @@ func (g *GoogleMaps) ReverseGeocoding(location *entity.Location) (string, *entit
 		return results.Status, nil, errors.New("no results for " + latlng)
 	} else {
 		address := &entity.Address{
-			Address: results.Results[0].Address,
+			Address:  results.Results[0].Address,
+			Name:     strings.Split(results.Results[0].Address, ",")[0],
+			Location: &results.Results[0].ResultItem.Location,
 		}
 		return status.OK, address, nil
 	}
 }
 
-// TODO: CREAR UN MODELO PARA LEER LA RESPUESTA DEL SEARCH. DEBE DEVOLER NAME, ADDRESS, LOCATION
-func (g *GoogleMaps) Search(address string, location *entity.Location) (string, []*entity.Place, error) {
+func (g *GoogleMaps) Search(address string, location *entity.Location) (string, []*entity.Address, error) {
 	latlng := fmt.Sprintf("%f,%f", location.Lat, location.Lng)
 	params := url.Values{}
 	params.Add("query", address)
@@ -128,11 +135,22 @@ func (g *GoogleMaps) Search(address string, location *entity.Location) (string, 
 		return results.Status, nil, err
 	}
 	if len(results.Results) == 0 {
-		return results.Status, nil, errors.New("no results for " + latlng)
+		return results.Status, nil, errors.New("no results for " + address)
 	} else {
-		// TODO: RECORRER ARRAY RESULTS
-		fmt.Println(results.Results[0])
-		return status.OK, nil, nil
+		list := []*entity.Address{}
+		for _, v := range results.Results {
+			locationTmp := &entity.Location{
+				Lat: v.ResultItem.Location.Lat,
+				Lng: v.ResultItem.Location.Lng,
+			}
+			placeTmp := &entity.Address{
+				Name:     strings.Split(v.Address, ",")[0],
+				Address:  v.Address,
+				Location: locationTmp,
+			}
+			list = append(list, placeTmp)
+		}
+		return status.OK, list, nil
 	}
 
 }

@@ -7,6 +7,7 @@ const (
 	DENIED         = "DENIED"
 	UNKNOWN        = "UNKNOWN"
 	INVALID_DATA   = "IVALID_DATA"
+	ZERO_RESULTS   = "ZERO_RESULTS"
 
 	OK_MESSAGE             = "request sent successfully"
 	MISSING_PARAMS_MESSAGE = "you must submit all required fields"

@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"maps.patio.com/entity"
+	status "maps.patio.com/responses"
 )
 
 type HereMaps struct {
@@ -21,7 +22,12 @@ type Items struct {
 
 type Item struct {
 	Title    string          `json:"title"`
+	Address  AddressLabel    `json:"address"`
 	Location entity.Location `json:"position"`
+}
+
+type AddressLabel struct {
+	Label string `json:"label"`
 }
 
 func New(key string) *HereMaps {
@@ -30,7 +36,7 @@ func New(key string) *HereMaps {
 	}
 }
 
-func (h *HereMaps) Geocoding(address string) (string, *entity.Location, error) {
+func (h *HereMaps) Geocoding(address string) (string, *entity.Address, error) {
 	params := url.Values{}
 	params.Add("q", address)
 	params.Add("apikey", h.ApiKey)
@@ -39,24 +45,29 @@ func (h *HereMaps) Geocoding(address string) (string, *entity.Location, error) {
 
 	resp, err := http.Get(uri)
 	if err != nil {
-		return "FAILED", nil, err
+		return status.FAILED, nil, err
 	}
 	defer resp.Body.Close()
 
 	bytes, errRead := ioutil.ReadAll(resp.Body)
 	if errRead != nil {
-		return "FAILED", nil, err
+		return status.FAILED, nil, err
 	}
 	var items Items
 	errUnmarshal := json.Unmarshal(bytes, &items)
 	if errUnmarshal != nil {
-		return "FAILED", nil, err
+		return status.FAILED, nil, err
 	}
 
 	if len(items.Items) == 0 {
-		return "ZERO_RESULTS", nil, errors.New("no results for " + address)
+		return status.ZERO_RESULTS, nil, errors.New("no results for " + address)
 	} else {
-		return "OK", &items.Items[0].Location, nil
+		newAddress := &entity.Address{
+			Name:     items.Items[0].Title,
+			Address:  items.Items[0].Address.Label,
+			Location: &items.Items[0].Location,
+		}
+		return status.OK, newAddress, nil
 	}
 }
 
@@ -71,33 +82,35 @@ func (h *HereMaps) ReverseGeocoding(location *entity.Location) (string, *entity.
 
 	resp, err := http.Get(uri)
 	if err != nil {
-		return "FAILED", nil, err
+		return status.FAILED, nil, err
 	}
 
 	defer resp.Body.Close()
 	bytes, errRead := ioutil.ReadAll(resp.Body)
 	if errRead != nil {
-		return "FAILED", nil, err
+		return status.FAILED, nil, err
 	}
 
 	var items Items
 	errUnmarshal := json.Unmarshal(bytes, &items)
 	if errUnmarshal != nil {
-		return "FAILED", nil, err
+		return status.FAILED, nil, err
 	}
 
 	if len(items.Items) == 0 {
-		return "ZERO_RESULTS", nil, errors.New("no results for " + latlng)
+		return status.ZERO_RESULTS, nil, errors.New("no results for " + latlng)
 	} else {
 		address := &entity.Address{
-			Address: items.Items[0].Title,
+			Name:     items.Items[0].Title,
+			Address:  items.Items[0].Address.Label,
+			Location: &items.Items[0].Location,
 		}
-		return "OK", address, nil
+		return status.OK, address, nil
 	}
 }
 
 // TODO: CREAR UN MODELO PARA LEER LA RESPUESTA DEL SEARCH. DEBE DEVOLER NAME, ADDRESS, LOCATION
-func (h *HereMaps) Search(address string, location *entity.Location) (string, []*entity.Place, error) {
+func (h *HereMaps) Search(address string, location *entity.Location) (string, []*entity.Address, error) {
 
 	latlng := fmt.Sprintf("%f,%f", location.Lat, location.Lng)
 	params := url.Values{}
@@ -109,17 +122,45 @@ func (h *HereMaps) Search(address string, location *entity.Location) (string, []
 	var uri string = fmt.Sprintf("https://autosuggest.search.hereapi.com/v1/autosuggest?%s", params.Encode())
 	resp, err := http.Get(uri)
 	if err != nil {
-		return "FAILED", nil, err
+		return status.FAILED, nil, err
 	}
 
 	defer resp.Body.Close()
 	bytes, errRead := ioutil.ReadAll(resp.Body)
 	if errRead != nil {
-		return "FAILED", nil, err
+		return status.FAILED, nil, err
 	}
 
-	fmt.Println(string(bytes))
-	return "", nil, nil
+	var items Items
+	errUnmarshal := json.Unmarshal(bytes, &items)
+	if errUnmarshal != nil {
+		return status.FAILED, nil, err
+	}
+
+	if len(items.Items) == 0 {
+		return status.ZERO_RESULTS, nil, errors.New("no results for " + latlng)
+	} else {
+		list := []*entity.Address{}
+		for _, v := range items.Items {
+			locationTmp := &entity.Location{
+				Lat: v.Location.Lat,
+				Lng: v.Location.Lng,
+			}
+			placeTmp := &entity.Address{
+				Name:     v.Title,
+				Address:  v.Address.Label,
+				Location: locationTmp,
+			}
+			list = append(list, placeTmp)
+		}
+		// address := &entity.Address{
+		// 	Address:  items.Items[0].Title,
+		// 	Name:     strings.Split(items.Items[0].Title, ",")[0],
+		// 	Location: &items.Items[0].Location,
+		// }
+		return status.OK, list, nil
+	}
+
 }
 
 // TODO: ROUTES

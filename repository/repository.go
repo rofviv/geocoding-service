@@ -10,9 +10,9 @@ import (
 )
 
 type Repository interface {
-	Geocoding(address string) (status string, location *entity.Location, err error)
+	Geocoding(address string) (status string, location *entity.Address, err error)
 	ReverseGeocoding(location *entity.Location) (status string, address *entity.Address, err error)
-	Search(address string, location *entity.Location) (status string, places []*entity.Place, err error)
+	Search(address string, location *entity.Location) (status string, places []*entity.Address, err error)
 }
 
 func New(config *configuration.Configuration) (Repository, error) {

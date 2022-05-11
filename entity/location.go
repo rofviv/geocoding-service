@@ -6,10 +6,12 @@ type Location struct {
 }
 
 type Address struct {
-	Address string `json:"address"`
+	Name     string    `json:"name"`
+	Address  string    `json:"address"`
+	Location *Location `json:"location"`
 }
 
-type Place struct {
-	Location *Location `json:"location"`
-	Address  *Address  `json:"address"`
-}
+// type Place struct {
+// 	Location *Location `json:"location"`
+// 	Address  *Address  `json:"address"`
+// }
