@@ -15,6 +15,7 @@ func Maps(repo repository.Repository) *mux.Router {
 	router.HandleFunc("/geocoding", ctrl.Geocoding).Methods("POST")
 	router.HandleFunc("/reverse-geocoding", ctrl.ReverseGeocoding).Methods("POST")
 	router.HandleFunc("/search", ctrl.Search).Methods("POST")
+	router.HandleFunc("/distance", ctrl.Distance).Methods("POST")
 	router.HandleFunc("/route", ctrl.Route).Methods("POST")
 
 	return router

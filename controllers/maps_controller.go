@@ -25,7 +25,9 @@ func New(repo repository.Repository) {
 }
 
 func IndexRoute(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Maps ROUTE")
+	w.Header().Set("Content-Type", "application/json")
+	// TODO: RETURN JSON
+	fmt.Fprintf(w, mMap.Provider())
 }
 
 func Geocoding(w http.ResponseWriter, r *http.Request) {
@@ -150,6 +152,43 @@ func Search(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	json.NewEncoder(w).Encode(result)
+}
+
+func Distance(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	result := Response{}
+	var body map[string]*entity.Location
+	err := json.NewDecoder(r.Body).Decode(&body)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		result.Status = status.FAILED
+		result.Message = status.FAILED_MESSAGE
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
+	if body["origin"] == nil || body["destination"] == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		result.Status = status.MISSING_PARAMS
+		result.Message = status.MISSING_PARAMS_MESSAGE
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
+	statusMaps, route, err := mMap.Distance(body["origin"], body["destination"])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		result.Status = statusMaps
+		result.Message = err.Error()
+	} else {
+		w.WriteHeader(http.StatusOK)
+		result.Status = statusMaps
+		result.Message = status.OK_MESSAGE
+		result.Data = route
+	}
+
 	json.NewEncoder(w).Encode(result)
 }
 

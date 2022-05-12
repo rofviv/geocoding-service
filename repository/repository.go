@@ -10,9 +10,11 @@ import (
 )
 
 type Repository interface {
+	Provider() (provider string)
 	Geocoding(address string) (status string, location *entity.Address, err error)
 	ReverseGeocoding(location *entity.Location) (status string, address *entity.Address, err error)
 	Search(address string, location *entity.Location) (status string, places []*entity.Address, err error)
+	Distance(origin *entity.Location, destination *entity.Location) (status string, route *entity.Summary, err error)
 	Route(origin *entity.Location, destination *entity.Location) (status string, route *entity.Route, err error)
 }
 

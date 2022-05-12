@@ -11,8 +11,12 @@ type Address struct {
 	Location *Location `json:"location"`
 }
 
-type Route struct {
+type Summary struct {
 	Duration float64 `json:"duration"`
 	Distance float64 `json:"distance"`
-	Polyline string  `json:"polyline"`
+}
+
+type Route struct {
+	Summary  Summary
+	Polyline []*Location `json:"polyline"`
 }

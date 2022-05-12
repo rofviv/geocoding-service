@@ -18,8 +18,9 @@ type GoogleMaps struct {
 }
 
 type Results struct {
-	Results []ResultItem `json:"results"`
-	Status  string       `json:"status"`
+	Results      []ResultItem `json:"results"`
+	Status       string       `json:"status"`
+	ErrorMessage string       `json:"error_message"`
 }
 
 type ResultItem struct {
@@ -31,10 +32,34 @@ type Geometry struct {
 	Location entity.Location `json:"location"`
 }
 
+type Response struct {
+	Rows         []Row  `json:"rows"`
+	Status       string `json:"status"`
+	ErrorMessage string `json:"error_message"`
+}
+
+type Row struct {
+	Elements []Element `json:"elements"`
+}
+
+type Element struct {
+	Distance       ValueFloat `json:"distance"`
+	Duration       ValueFloat `json:"duration"`
+	StatusDistance string     `json:"Status"`
+}
+
+type ValueFloat struct {
+	Value float64 `json:"value"`
+}
+
 func New(key string) *GoogleMaps {
 	return &GoogleMaps{
 		ApiKey: key,
 	}
+}
+
+func (g *GoogleMaps) Provider() string {
+	return "GOOGLE MAPS"
 }
 
 func (g *GoogleMaps) Geocoding(address string) (string, *entity.Address, error) {
@@ -63,7 +88,10 @@ func (g *GoogleMaps) Geocoding(address string) (string, *entity.Address, error) 
 		return results.Status, nil, err
 	}
 	if len(results.Results) == 0 {
-		return results.Status, nil, errors.New("no results for " + address)
+		if results.ErrorMessage != "" {
+			return results.Status, nil, errors.New(results.ErrorMessage)
+		}
+		return results.Status, nil, errors.New("No results for " + address)
 	} else {
 		newAddress := &entity.Address{
 			Name:     strings.Split(results.Results[0].Address, ",")[0],
@@ -99,7 +127,10 @@ func (g *GoogleMaps) ReverseGeocoding(location *entity.Location) (string, *entit
 		return results.Status, nil, err
 	}
 	if len(results.Results) == 0 {
-		return results.Status, nil, errors.New("no results for " + latlng)
+		if results.ErrorMessage != "" {
+			return results.Status, nil, errors.New(results.ErrorMessage)
+		}
+		return results.Status, nil, errors.New("No results for " + latlng)
 	} else {
 		address := &entity.Address{
 			Address:  results.Results[0].Address,
@@ -135,7 +166,10 @@ func (g *GoogleMaps) Search(address string, location *entity.Location) (string, 
 		return results.Status, nil, err
 	}
 	if len(results.Results) == 0 {
-		return results.Status, nil, errors.New("no results for " + address)
+		if results.ErrorMessage != "" {
+			return results.Status, nil, errors.New(results.ErrorMessage)
+		}
+		return results.Status, nil, errors.New("No results for " + address)
 	} else {
 		list := []*entity.Address{}
 		for _, v := range results.Results {
@@ -155,8 +189,54 @@ func (g *GoogleMaps) Search(address string, location *entity.Location) (string, 
 
 }
 
+// TODO: DISTANCE
+func (g *GoogleMaps) Distance(origin *entity.Location, destination *entity.Location) (string, *entity.Summary, error) {
+	from := fmt.Sprintf("%f,%f", origin.Lat, origin.Lng)
+	to := fmt.Sprintf("%f,%f", destination.Lat, destination.Lng)
+	params := url.Values{}
+	params.Add("origins", from)
+	params.Add("destinations", to)
+	params.Add("mode", "driving")
+	params.Add("key", g.ApiKey)
+
+	var uri string = fmt.Sprintf("https://maps.googleapis.com/maps/api/distancematrix/json?%s", params.Encode())
+	resp, err := http.Get(uri)
+	if err != nil {
+		return status.FAILED, nil, err
+	}
+
+	defer resp.Body.Close()
+	bytes, errRead := ioutil.ReadAll(resp.Body)
+	if errRead != nil {
+		return status.FAILED, nil, err
+	}
+	var response Response
+	errUnmarshal := json.Unmarshal(bytes, &response)
+	if errUnmarshal != nil {
+		return status.FAILED, nil, err
+	}
+
+	if len(response.Rows) <= 0 {
+		if response.ErrorMessage != "" {
+			return response.Status, nil, errors.New(response.ErrorMessage)
+		}
+		return response.Status, nil, errors.New("Distance for origin or destination invalid")
+	}
+
+	var summary = &entity.Summary{
+		Duration: response.Rows[0].Elements[0].Duration.Value,
+		Distance: response.Rows[0].Elements[0].Distance.Value,
+	}
+
+	if response.Rows[0].Elements[0].StatusDistance != "" && response.Rows[0].Elements[0].StatusDistance == status.ZERO_RESULTS {
+		return status.ZERO_RESULTS, nil, errors.New("failed to calculate distance")
+	}
+
+	return status.OK, summary, nil
+}
+
 // TODO: ROUTES
-func (h *GoogleMaps) Route(origin *entity.Location, destination *entity.Location) (string, *entity.Route, error) {
+func (g *GoogleMaps) Route(origin *entity.Location, destination *entity.Location) (string, *entity.Route, error) {
 
 	return status.OK, nil, nil
 }

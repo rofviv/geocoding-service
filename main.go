@@ -43,6 +43,7 @@ func main() {
 		}
 	}()
 	log.Println("Server started on port " + port)
+	log.Println("Configured provider " + config.MAPS.Provider)
 	<-serverDoneChan
 	srv.Shutdown(ctx)
 	log.Println("Server stopped")
