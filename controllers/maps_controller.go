@@ -72,47 +72,27 @@ func ReverseGeocoding(w http.ResponseWriter, r *http.Request) {
 
 	result := Response{}
 
-	var body map[string]interface{}
+	var body entity.Location
 	err := json.NewDecoder(r.Body).Decode(&body)
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		result.Status = status.FAILED
 		result.Message = status.FAILED_MESSAGE
-	} else if body["lat"] == nil || body["lng"] == nil {
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
+	statusMaps, address, err := mMap.ReverseGeocoding(&body)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		result.Status = status.MISSING_PARAMS
-		result.Message = status.MISSING_PARAMS_MESSAGE
+		result.Status = statusMaps
+		result.Message = err.Error()
 	} else {
-		lat, errLat := strconv.ParseFloat(fmt.Sprint(body["lat"]), 64)
-		if errLat != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			result.Status = status.INVALID_DATA
-			result.Message = status.INVALID_DATA_MESSAGE + " 'lat'"
-		} else {
-			lng, errLng := strconv.ParseFloat(fmt.Sprint(body["lng"]), 64)
-			if errLng != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				result.Status = status.INVALID_DATA
-				result.Message = status.INVALID_DATA_MESSAGE + " 'lng'"
-			} else {
-				location := &entity.Location{
-					Lat: lat,
-					Lng: lng,
-				}
-				statusMaps, address, err := mMap.ReverseGeocoding(location)
-				if err != nil {
-					w.WriteHeader(http.StatusBadRequest)
-					result.Status = statusMaps
-					result.Message = err.Error()
-				} else {
-					w.WriteHeader(http.StatusOK)
-					result.Status = statusMaps
-					result.Message = status.OK_MESSAGE
-					result.Data = address
-				}
-			}
-		}
+		w.WriteHeader(http.StatusOK)
+		result.Status = statusMaps
+		result.Message = status.OK_MESSAGE
+		result.Data = address
 	}
 	json.NewEncoder(w).Encode(result)
 }
@@ -171,4 +151,43 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	json.NewEncoder(w).Encode(result)
+}
+
+func Route(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	result := Response{}
+	var body map[string]*entity.Location
+	err := json.NewDecoder(r.Body).Decode(&body)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		result.Status = status.FAILED
+		result.Message = status.FAILED_MESSAGE
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
+	if body["origin"] == nil || body["destination"] == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		result.Status = status.MISSING_PARAMS
+		result.Message = status.MISSING_PARAMS_MESSAGE
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
+	statusMaps, route, err := mMap.Route(body["origin"], body["destination"])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		result.Status = statusMaps
+		result.Message = err.Error()
+	} else {
+		w.WriteHeader(http.StatusOK)
+		result.Status = statusMaps
+		result.Message = status.OK_MESSAGE
+		result.Data = route
+	}
+
+	json.NewEncoder(w).Encode(result)
+
 }

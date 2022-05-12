@@ -11,7 +11,8 @@ type Address struct {
 	Location *Location `json:"location"`
 }
 
-// type Place struct {
-// 	Location *Location `json:"location"`
-// 	Address  *Address  `json:"address"`
-// }
+type Route struct {
+	Duration float64 `json:"duration"`
+	Distance float64 `json:"distance"`
+	Polyline string  `json:"polyline"`
+}

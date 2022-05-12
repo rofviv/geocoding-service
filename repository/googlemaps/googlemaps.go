@@ -156,3 +156,7 @@ func (g *GoogleMaps) Search(address string, location *entity.Location) (string, 
 }
 
 // TODO: ROUTES
+func (h *GoogleMaps) Route(origin *entity.Location, destination *entity.Location) (string, *entity.Route, error) {
+
+	return status.OK, nil, nil
+}

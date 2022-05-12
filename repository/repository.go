@@ -13,6 +13,7 @@ type Repository interface {
 	Geocoding(address string) (status string, location *entity.Address, err error)
 	ReverseGeocoding(location *entity.Location) (status string, address *entity.Address, err error)
 	Search(address string, location *entity.Location) (status string, places []*entity.Address, err error)
+	Route(origin *entity.Location, destination *entity.Location) (status string, route *entity.Route, err error)
 }
 
 func New(config *configuration.Configuration) (Repository, error) {

@@ -30,6 +30,23 @@ type AddressLabel struct {
 	Label string `json:"label"`
 }
 
+type Response struct {
+	Routes []Route `json:"routes"`
+}
+type Route struct {
+	Sections []Section `json:"sections"`
+}
+
+type Section struct {
+	Summary  Summary `json:"summary"`
+	Polyline string  `json:"polyline"`
+}
+
+type Summary struct {
+	Duration float64 `json:"duration"`
+	Distance float64 `json:"length"`
+}
+
 func New(key string) *HereMaps {
 	return &HereMaps{
 		ApiKey: key,
@@ -109,7 +126,6 @@ func (h *HereMaps) ReverseGeocoding(location *entity.Location) (string, *entity.
 	}
 }
 
-// TODO: CREAR UN MODELO PARA LEER LA RESPUESTA DEL SEARCH. DEBE DEVOLER NAME, ADDRESS, LOCATION
 func (h *HereMaps) Search(address string, location *entity.Location) (string, []*entity.Address, error) {
 
 	latlng := fmt.Sprintf("%f,%f", location.Lat, location.Lng)
@@ -153,14 +169,42 @@ func (h *HereMaps) Search(address string, location *entity.Location) (string, []
 			}
 			list = append(list, placeTmp)
 		}
-		// address := &entity.Address{
-		// 	Address:  items.Items[0].Title,
-		// 	Name:     strings.Split(items.Items[0].Title, ",")[0],
-		// 	Location: &items.Items[0].Location,
-		// }
 		return status.OK, list, nil
 	}
 
 }
 
-// TODO: ROUTES
+// TODO: CREAR MODELO ROUTE, DECODIFICAR LA POLILINEA Y ENCRIPTAR EN BASE64
+func (h *HereMaps) Route(origin *entity.Location, destination *entity.Location) (string, *entity.Route, error) {
+	from := fmt.Sprintf("%f,%f", origin.Lat, origin.Lng)
+	to := fmt.Sprintf("%f,%f", destination.Lat, destination.Lng)
+	params := url.Values{}
+	params.Add("origin", from)
+	params.Add("destination", to)
+	params.Add("transportMode", "bicycle")
+	params.Add("return", "polyline,summary")
+	params.Add("apikey", h.ApiKey)
+
+	var uri string = fmt.Sprintf("https://router.hereapi.com/v8/routes?%s", params.Encode())
+	resp, err := http.Get(uri)
+	if err != nil {
+		return status.FAILED, nil, err
+	}
+
+	defer resp.Body.Close()
+	bytes, errRead := ioutil.ReadAll(resp.Body)
+	if errRead != nil {
+		return status.FAILED, nil, err
+	}
+	// fmt.Println(string(bytes))
+
+	var routes Response
+	errUnmarshal := json.Unmarshal(bytes, &routes)
+	if errUnmarshal != nil {
+		return status.FAILED, nil, err
+	}
+
+	fmt.Println(routes)
+
+	return status.OK, nil, nil
+}
