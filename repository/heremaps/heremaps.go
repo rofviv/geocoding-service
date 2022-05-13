@@ -271,7 +271,6 @@ func (h *HereMaps) Route(origin *entity.Location, destination *entity.Location) 
 		return status.FAILED, nil, err
 	}
 
-	// TODO: VER LA MANERA DE ENCRIPTAR LA LIST A UN STRING CORTO PARA NO MANDAR MUCHOS DATOS POR LA RED
 	var list []*entity.Location
 
 	for _, v := range poly.Coordinates() {

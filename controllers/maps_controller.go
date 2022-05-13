@@ -26,8 +26,11 @@ func New(repo repository.Repository) {
 
 func IndexRoute(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	// TODO: RETURN JSON
-	fmt.Fprintf(w, mMap.Provider())
+	result := Response{}
+	result.Status = status.OK
+	result.Message = status.OK_MESSAGE
+	result.Data = mMap.Provider()
+	json.NewEncoder(w).Encode(result)
 }
 
 func Geocoding(w http.ResponseWriter, r *http.Request) {

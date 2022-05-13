@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/twpayne/go-polyline"
 	"maps.patio.com/entity"
 	status "maps.patio.com/responses"
 )
@@ -46,6 +47,25 @@ type Element struct {
 	Distance       ValueFloat `json:"distance"`
 	Duration       ValueFloat `json:"duration"`
 	StatusDistance string     `json:"Status"`
+}
+
+type ResponseRoute struct {
+	Routes []Route `json:"routes"`
+	Status string  `json:"status"`
+}
+
+type Route struct {
+	Legs             []Leg            `json:"legs"`
+	OverviewPolyline OverviewPolyline `json:"overview_polyline"`
+}
+
+type Leg struct {
+	Distance ValueFloat `json:"distance"`
+	Duration ValueFloat `json:"duration"`
+}
+
+type OverviewPolyline struct {
+	Points string `json:"points"`
 }
 
 type ValueFloat struct {
@@ -189,7 +209,6 @@ func (g *GoogleMaps) Search(address string, location *entity.Location) (string, 
 
 }
 
-// TODO: DISTANCE
 func (g *GoogleMaps) Distance(origin *entity.Location, destination *entity.Location) (string, *entity.Summary, error) {
 	from := fmt.Sprintf("%f,%f", origin.Lat, origin.Lng)
 	to := fmt.Sprintf("%f,%f", destination.Lat, destination.Lng)
@@ -237,6 +256,57 @@ func (g *GoogleMaps) Distance(origin *entity.Location, destination *entity.Locat
 
 // TODO: ROUTES
 func (g *GoogleMaps) Route(origin *entity.Location, destination *entity.Location) (string, *entity.Route, error) {
+	from := fmt.Sprintf("%f,%f", origin.Lat, origin.Lng)
+	to := fmt.Sprintf("%f,%f", destination.Lat, destination.Lng)
+	params := url.Values{}
+	params.Add("origin", from)
+	params.Add("destination", to)
+	params.Add("mode", "driving")
+	params.Add("key", g.ApiKey)
 
-	return status.OK, nil, nil
+	var uri string = fmt.Sprintf("https://maps.googleapis.com/maps/api/directions/json?%s", params.Encode())
+	resp, err := http.Get(uri)
+	if err != nil {
+		return status.FAILED, nil, err
+	}
+
+	defer resp.Body.Close()
+	bytes, errRead := ioutil.ReadAll(resp.Body)
+	if errRead != nil {
+		return status.FAILED, nil, err
+	}
+
+	var responseRoute ResponseRoute
+	errUnmarshal := json.Unmarshal(bytes, &responseRoute)
+	if errUnmarshal != nil {
+		return status.FAILED, nil, err
+	}
+
+	if len(responseRoute.Routes) <= 0 {
+		return status.ZERO_RESULTS, nil, errors.New("Route for origin or destination invalid")
+	}
+	buf := []byte(responseRoute.Routes[0].OverviewPolyline.Points)
+	coords, _, err := polyline.DecodeCoords(buf)
+	if err != nil {
+		return status.FAILED, nil, err
+	}
+
+	var list []*entity.Location
+
+	for _, v := range coords {
+		var locationTmp = entity.Location{Lat: v[0], Lng: v[1]}
+		list = append(list, &locationTmp)
+	}
+
+	summaryTmp := entity.Summary{
+		Duration: responseRoute.Routes[0].Legs[0].Duration.Value,
+		Distance: responseRoute.Routes[0].Legs[0].Distance.Value,
+	}
+
+	var route = &entity.Route{
+		Summary:  summaryTmp,
+		Polyline: list,
+	}
+
+	return status.OK, route, nil
 }

@@ -36,8 +36,8 @@ Content-Type: application/json
 
 {
     "origin": {
-        "lat": -17.79920272314301,
-        "lng": -63.197151031977505
+        "lat": -17.01,
+        "lng": -63.10
     },
     "destination": {
         "lat": -17.80,
@@ -51,8 +51,8 @@ Content-Type: application/json
 
 {
     "origin": {
-        "lat": -17.79920272314301,
-        "lng": -63.197151031977505
+        "lat": -17.01,
+        "lng": -63.10
     },
     "destination": {
         "lat": -17.80,
